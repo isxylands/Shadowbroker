@@ -238,7 +238,7 @@ describe('MessagesView first-contact trust UX', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Import Signed Invite' }));
 
-    expect(await screen.findByText('Import Verified Invite')).toBeInTheDocument();
+    expect(await screen.findByText("Paste Someone's Address")).toBeInTheDocument();
     expect(screen.getByLabelText(/Local Alias/i)).toHaveValue('!sb_unknown');
   });
 
@@ -463,12 +463,12 @@ describe('MessagesView first-contact trust UX', () => {
 
     renderMessagesView();
     fireEvent.click(screen.getByRole('button', { name: 'CONTACTS' }));
-    expect(await screen.findByText('Import Verified Invite')).toBeInTheDocument();
+    expect(await screen.findByText("Paste Someone's Address")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText(/Signed Invite JSON/i), {
+    fireEvent.change(screen.getByPlaceholderText(/Paste the address blob/i), {
       target: { value: JSON.stringify({ invite: { event_type: 'dm_invite', payload: {} } }) },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Import Signed Invite' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import Address' }));
 
     expect(
       await screen.findByText(/INVITE PINNED for !sb_attested \(invitefp\.\.tested\)\./i),
@@ -487,12 +487,12 @@ describe('MessagesView first-contact trust UX', () => {
 
     renderMessagesView();
     fireEvent.click(screen.getByRole('button', { name: 'CONTACTS' }));
-    expect(await screen.findByText('Import Verified Invite')).toBeInTheDocument();
+    expect(await screen.findByText("Paste Someone's Address")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText(/Signed Invite JSON/i), {
+    fireEvent.change(screen.getByPlaceholderText(/Paste the address blob/i), {
       target: { value: JSON.stringify({ invite: { event_type: 'dm_invite', payload: {} } }) },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Import Signed Invite' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import Address' }));
 
     expect(
       await screen.findByText(/TOFU PINNED for !sb_compat \(invitefp\.\.compat\)\./i),
@@ -536,12 +536,12 @@ describe('MessagesView first-contact trust UX', () => {
 
     renderMessagesView();
     fireEvent.click(screen.getByRole('button', { name: 'CONTACTS' }));
-    expect(await screen.findByText('Import Verified Invite')).toBeInTheDocument();
+    expect(await screen.findByText("Paste Someone's Address")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText(/Signed Invite JSON/i), {
+    fireEvent.change(screen.getByPlaceholderText(/Paste the address blob/i), {
       target: { value: JSON.stringify({ invite: { event_type: 'dm_invite', payload: {} } }) },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Import Signed Invite' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import Address' }));
 
     expect(
       await screen.findByText(/CONTINUITY BROKEN for Pinned Peer\. Stable root continuity changed\./i),
@@ -563,8 +563,9 @@ describe('MessagesView first-contact trust UX', () => {
     renderMessagesView();
 
     expect(
-      await screen.findByText(/Preparing secure mail in the background/i),
+      await screen.findByText(/Private message delivery is connecting/i),
     ).toBeInTheDocument();
+    expect(screen.getByText(/generate and copy your public address now/i)).toBeInTheDocument();
     expect(screen.queryByText(/LOCKED/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/enter the Wormhole/i)).not.toBeInTheDocument();
   });
