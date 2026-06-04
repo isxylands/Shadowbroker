@@ -86,6 +86,11 @@
       "weight": 3
     },
     {
+      "name": "Palo Alto Security",
+      "url": "https://security.paloaltonetworks.com/rss.xml",
+      "weight": 4
+    },
+    {
       "name": "Japan Times",
       "url": "https://www.japantimes.co.jp/feed/",
       "weight": 3
