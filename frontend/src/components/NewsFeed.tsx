@@ -8,7 +8,7 @@ import { usePredictionMarketsOptIn } from '@/hooks/usePredictionMarketsOptIn';
 import React, { useEffect, useRef, useCallback } from 'react';
 import WikiImage from '@/components/WikiImage';
 import { fetchWikipediaSummary } from '@/lib/wikimediaClient';
-import type { SelectedEntity, RegionDossier, FimiData } from "@/types/dashboard";
+import type { SelectedEntity, RegionDossier, FimiData, VulnerabilityItem } from "@/types/dashboard";
 import { useDataKeys } from '@/hooks/useDataStore';
 import { API_BASE } from '@/lib/api';
 import { lookupShodanHost } from '@/lib/shodanClient';
@@ -251,6 +251,17 @@ const VESSEL_TYPE_WIKI: Record<string, string> = {
 
 type FlightTrailPoint = { lat?: number; lng?: number; alt?: number; ts?: number } | number[];
 
+type IntelFeedItem = Record<string, any> & {
+    feed_kind: 'news' | 'vulnerability';
+    news_index?: number;
+    sort_epoch?: number;
+    cve_ids?: string[];
+    severity?: string;
+    severity_zh?: string;
+    products?: string[];
+    vendor?: string;
+};
+
 function formatObservedDuration(seconds: number): string {
     // Compact "1h 14m" / "23m" / "45s" — matches the density of the rest
     // of the flight tooltip. < 60s is shown as "<1m" so the user knows
@@ -325,7 +336,7 @@ function NewsFeedInner({ selectedEntity, regionDossier, regionDossierLoading, on
     const data = useDataKeys([
       'news', 'fimi', 'commercial_flights', 'private_flights', 'private_jets',
       'military_flights', 'tracked_flights', 'ships', 'gdelt', 'liveuamap',
-      'airports', 'last_updated', 'threat_level',
+      'airports', 'last_updated', 'threat_level', 'vulnerabilities',
     ] as const);
     const [isMinimized, setIsMinimized] = useState(false);
     const [selectedFlightTrail, setSelectedFlightTrail] = useState<FlightTrailPoint[]>([]);
@@ -350,8 +361,35 @@ function NewsFeedInner({ selectedEntity, regionDossier, regionDossierLoading, on
         }
     }
 
-    const news = data?.news || [];
+    const news = useMemo(() => data?.news || [], [data?.news]);
+    const vulnerabilities: VulnerabilityItem[] = useMemo(
+        () => data?.vulnerabilities || [],
+        [data?.vulnerabilities],
+    );
     const fimi: FimiData | undefined = data?.fimi;
+
+    const intelItems: IntelFeedItem[] = useMemo(() => {
+        const vulnerabilitySources = new Set(vulnerabilities.map((item) => item.source));
+        const vulnerabilityItems = vulnerabilities.map((item) => ({
+            ...item,
+            feed_kind: 'vulnerability' as const,
+            sort_epoch: item.published_epoch || (Date.parse(item.published || '') / 1000) || 0,
+        }));
+        const newsItems = news
+            .filter((item) => {
+                const title = item.title || '';
+                return !(vulnerabilitySources.has(item.source) && /\bCVE-\d{4}-\d{4,7}\b/i.test(title));
+            })
+            .map((item, newsIndex) => ({
+                ...item,
+                feed_kind: 'news' as const,
+                news_index: newsIndex,
+                sort_epoch: Date.parse(item.published || item.pub_date || '') / 1000 || 0,
+            }));
+        return [...vulnerabilityItems, ...newsItems]
+            .sort((a, b) => ((b.risk_score || 0) - (a.risk_score || 0)) || ((b.sort_epoch || 0) - (a.sort_epoch || 0)))
+            .slice(0, 60);
+    }, [news, vulnerabilities]);
 
     // Cross-reference: check if a news article title matches any FIMI disinfo keywords
     const fimiKeywords = useMemo(() => fimi?.disinfo_keywords || [], [fimi?.disinfo_keywords]);
@@ -1847,10 +1885,19 @@ function NewsFeedInner({ selectedEntity, regionDossier, regionDossierLoading, on
                         exit={{ opacity: 0 }}
                         className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 styled-scrollbar"
                     >
-                        {news.map((item: any, idx: number) => {
+                        {intelItems.map((item: IntelFeedItem, idx: number) => {
                             let bgClass, titleClass, badgeClass;
                             const isBreaking = item.breaking === true;
-                            if (isBreaking) {
+                            const isVulnerability = item.feed_kind === 'vulnerability';
+                            if (isVulnerability && item.severity === 'CRITICAL') {
+                                bgClass = "bg-red-950/35 border-red-400/70";
+                                titleClass = "text-red-200 font-bold";
+                                badgeClass = "bg-red-500/20 text-red-200 border-red-400/60";
+                            } else if (isVulnerability) {
+                                bgClass = "bg-fuchsia-950/25 border-fuchsia-500/40";
+                                titleClass = "text-fuchsia-200 font-bold";
+                                badgeClass = "bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/40";
+                            } else if (isBreaking) {
                                 bgClass = "bg-red-950/30 border-red-500/60";
                                 titleClass = "text-red-300 font-bold";
                                 badgeClass = "bg-red-500/20 text-red-300 border-red-400/50";
@@ -1885,13 +1932,20 @@ function NewsFeedInner({ selectedEntity, regionDossier, regionDossierLoading, on
                                     <div className="flex items-center justify-between text-[12px] text-[var(--text-secondary)] uppercase tracking-widest">
                                         <span className="font-bold flex items-center gap-1 text-white">
                                             {isBreaking && <span className="text-red-400 mr-1">BREAKING</span>}
+                                            {isVulnerability && <span className="text-fuchsia-300 mr-1">VULN</span>}
                                             &gt;_ {item.source}
                                         </span>
                                         <span>[{item.published ? formatTime(item.published) : ''}]</span>
                                     </div>
 
                                     <button
-                                        onClick={() => onArticleClick?.(idx, item.coords?.[0], item.coords?.[1], item.title)}
+                                        onClick={() => {
+                                            if (isVulnerability && item.link) {
+                                                window.open(item.link, '_blank', 'noopener,noreferrer');
+                                                return;
+                                            }
+                                            onArticleClick?.(item.news_index ?? idx, item.coords?.[0], item.coords?.[1], item.title);
+                                        }}
                                         className={`text-left text-[12px] ${titleClass} hover:text-[var(--text-primary)] transition-colors leading-tight cursor-pointer`}
                                     >
                                         {item.title}
@@ -1912,9 +1966,34 @@ function NewsFeedInner({ selectedEntity, regionDossier, regionDossierLoading, on
                                         </div>
                                     )}
 
+                                    {isVulnerability && (
+                                        <div className="mt-1 px-1.5 py-1 bg-black/60 border border-fuchsia-800/50 rounded-sm text-[11px] font-mono flex flex-col gap-1">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                {(item.cve_ids || []).slice(0, 3).map((cve) => (
+                                                    <span key={cve} className="px-1.5 py-0.5 bg-fuchsia-500/10 text-fuchsia-200 border border-fuchsia-500/40 rounded-sm">
+                                                        {cve}
+                                                    </span>
+                                                ))}
+                                                <span className="px-1.5 py-0.5 bg-red-500/10 text-red-300 border border-red-500/30 rounded-sm">
+                                                    {item.severity_zh || item.severity || 'UNKNOWN'}
+                                                </span>
+                                            </div>
+                                            {(item.products?.length || 0) > 0 && (
+                                                <div className="text-[10px] text-[var(--text-muted)] truncate">
+                                                    PRODUCT: {item.products?.join(', ')}
+                                                </div>
+                                            )}
+                                            {item.link && (
+                                                <a href={item.link} target="_blank" rel="noreferrer" className="text-[10px] text-fuchsia-300 hover:text-white flex items-center gap-1 w-fit">
+                                                    <ExternalLink size={10} /> OFFICIAL ADVISORY
+                                                </a>
+                                            )}
+                                        </div>
+                                    )}
+
                                     <div className="flex items-center gap-1.5 mt-1 relative z-10 flex-wrap">
                                         <span className={`text-[11px] font-bold font-mono px-1.5 py-0.5 rounded-sm border ${badgeClass}`}>
-                                            {isBreaking ? 'BREAKING' : `LVL: ${item.risk_score}/10`}
+                                            {isVulnerability ? `${item.severity || 'VULN'}: ${item.risk_score}/10` : isBreaking ? 'BREAKING' : `LVL: ${item.risk_score}/10`}
                                         </span>
                                         {item.sentiment != null && (
                                             <span className={`text-[11px] font-bold font-mono px-1.5 py-0.5 rounded-sm border ${
@@ -1940,7 +2019,7 @@ function NewsFeedInner({ selectedEntity, regionDossier, regionDossierLoading, on
                                                 ⚠ DISINFORMATION-LINKED
                                             </span>
                                         )}
-                                        {item.cluster_count > 1 && (
+                                        {!isVulnerability && item.cluster_count > 1 && (
                                             <button onClick={() => toggleExpand(idx)} className="text-[11px] font-bold font-mono text-cyan-500 bg-[var(--bg-secondary)]/50 hover:text-[var(--text-primary)] hover:bg-[var(--hover-accent)] border border-cyan-500/30 px-1.5 py-0.5 rounded-sm transition-colors cursor-pointer">
                                                 {isExpanded ? '- COLLAPSE' : `+${item.cluster_count - 1} SOURCES`}
                                             </button>
@@ -1982,11 +2061,11 @@ function NewsFeedInner({ selectedEntity, regionDossier, regionDossierLoading, on
                                 </motion.div>
                             )
                         })}
-                        {news.length === 0 && (
+                        {intelItems.length === 0 && (
                             <div className="text-cyan-500/50 text-[10px] tracking-widest font-bold text-center mt-6">
-                                NO NEWS ITEMS LOADED
+                                NO INTEL ITEMS LOADED
                                 <div className="mt-2 text-[11px] font-normal tracking-normal text-cyan-600/80">
-                                    Feed ingest is empty or still warming up.
+                                    Feeds are empty or still warming up.
                                 </div>
                             </div>
                         )}

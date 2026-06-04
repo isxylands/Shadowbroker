@@ -599,7 +599,7 @@ async def bootstrap_critical(request: Request):
         "private_jets", "tracked_flights", "ships", "uavs", "liveuamap", "gps_jamming",
         "satellites", "satellite_source", "satellite_analysis", "sigint", "sigint_totals",
         "trains", "news", "gdelt", "airports", "threat_level", "trending_markets",
-        "correlations", "fimi", "crowdthreat",
+        "correlations", "fimi", "crowdthreat", "vulnerabilities",
     )
     freshness = get_source_timestamps_snapshot()
     ships_enabled = any(active_layers.get(key, True) for key in (
@@ -650,6 +650,7 @@ async def bootstrap_critical(request: Request):
         "sigint_totals": _sigint_totals_for_items(sigint_items),
         "trains": _cap_startup_items((d.get("trains") or []) if active_layers.get("trains", True) else [], 100),
         "news": _cap_startup_items(d.get("news") or [], 30),
+        "vulnerabilities": _cap_startup_items(d.get("vulnerabilities") or [], 12),
         "gdelt": _cap_startup_items((d.get("gdelt") or []) if active_layers.get("global_incidents", True) else [], 300),
         "airports": _cap_startup_items(d.get("airports") or [], 500),
         "threat_level": d.get("threat_level"),
@@ -758,7 +759,7 @@ async def live_data_slow(
         "firms_fires", "datacenters", "military_bases", "power_plants", "viirs_change_nodes",
         "scanners", "weather_alerts", "ukraine_alerts", "air_quality", "volcanoes",
         "fishing_activity", "psk_reporter", "correlations", "uap_sightings", "wastewater",
-        "crowdthreat", "threat_level", "trending_markets",
+        "crowdthreat", "vulnerabilities", "threat_level", "trending_markets",
     )
     freshness = get_source_timestamps_snapshot()
     payload = {
@@ -766,6 +767,7 @@ async def live_data_slow(
         "threat_level": d.get("threat_level"),
         "trending_markets": d.get("trending_markets", []),
         "news": d.get("news", []),
+        "vulnerabilities": d.get("vulnerabilities", []) if active_layers.get("vulnerabilities", True) else [],
         "stocks": d.get("stocks", {}),
         "financial_source": d.get("financial_source", ""),
         "oil": d.get("oil", {}),

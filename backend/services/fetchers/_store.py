@@ -66,6 +66,7 @@ class DashboardData(TypedDict, total=False):
     uap_sightings: List[Dict[str, Any]]
     wastewater: List[Dict[str, Any]]
     crowdthreat: List[Dict[str, Any]]
+    vulnerabilities: List[Dict[str, Any]]
     sar_scenes: List[Dict[str, Any]]
     sar_anomalies: List[Dict[str, Any]]
     sar_aoi_coverage: List[Dict[str, Any]]
@@ -116,6 +117,7 @@ latest_data: DashboardData = {
     "uap_sightings": [],
     "wastewater": [],
     "crowdthreat": [],
+    "vulnerabilities": [],
     "sar_scenes": [],
     "sar_anomalies": [],
     "sar_aoi_coverage": [],
@@ -327,6 +329,7 @@ active_layers: dict[str, bool] = {
     "wastewater": True,
     "ai_intel": True,
     "crowdthreat": False,
+    "vulnerabilities": True,
     "sar": True,
 }
 

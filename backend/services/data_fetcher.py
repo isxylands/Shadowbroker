@@ -47,6 +47,7 @@ from services.fetchers.flights import _BLIND_SPOT_REGIONS  # noqa: F401 — re-e
 from services.fetchers.military import fetch_military_flights  # noqa: F401
 from services.fetchers.satellites import fetch_satellites  # noqa: F401
 from services.fetchers.news import fetch_news  # noqa: F401
+from services.fetchers.vulnerabilities import fetch_vulnerabilities  # noqa: F401
 
 # Newly extracted fetcher modules
 from services.fetchers.financial import fetch_financial_markets  # noqa: F401
@@ -136,6 +137,7 @@ _INTEL_STARTUP_CACHE_KEYS = (
     "correlations",
     "fimi",
     "crowdthreat",
+    "vulnerabilities",
     "uap_sightings",
     "military_bases",
     "wastewater",
@@ -458,6 +460,8 @@ def update_slow_data():
     logger.info("Slow-tier data update starting...")
     slow_funcs = [
         fetch_news,
+        fetch_vulnerabilities,
+        fetch_prediction_markets,
         fetch_earthquakes,
         fetch_firms_fires,
         fetch_firms_country_fires,
@@ -580,6 +584,7 @@ def update_all_data(*, startup_mode: bool = False):
             fetch_airports,
             update_fast_data,
             fetch_news,
+            fetch_vulnerabilities,
             fetch_gdelt,
             fetch_crowdthreat,
             fetch_firms_fires,

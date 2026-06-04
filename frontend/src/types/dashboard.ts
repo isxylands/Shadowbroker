@@ -621,6 +621,7 @@ export interface NewsArticle {
   source: string;
   link: string;
   pub_date: string;
+  published?: string;
   risk_score: number;
   lat: number;
   lng: number;
@@ -639,6 +640,27 @@ export interface NewsArticle {
     slug?: string;
     kalshi_ticker?: string;
   } | null;
+}
+
+export interface VulnerabilityItem {
+  id: string;
+  title: string;
+  summary?: string;
+  source: string;
+  source_type: 'vulnerability_advisory' | string;
+  link: string;
+  published: string;
+  published_epoch?: number | null;
+  cve_ids: string[];
+  primary_cve: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFORMATIONAL' | 'NONE' | string;
+  severity_zh?: string;
+  risk_score: number;
+  vendor: string;
+  products?: string[];
+  references?: string[];
+  cve_api_url?: string;
+  machine_assessment?: string;
 }
 
 export interface ThreatLevel {
@@ -870,6 +892,7 @@ export interface DashboardData {
     outcomes?: Array<{ name: string; pct: number }>;
   }>;
   news?: NewsArticle[];
+  vulnerabilities?: VulnerabilityItem[];
   stocks?: StocksData;
   oil?: OilData;
   unusual_whales?: {
