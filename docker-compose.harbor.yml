@@ -3,9 +3,8 @@
 #   ./scripts/build-harbor-images.sh
 #   powershell -ExecutionPolicy Bypass -File scripts/build-harbor-images.ps1
 #
-# Or override tag manually:
-#   export SHADOWBROKER_IMAGE_TAG="4a21e92-20260605-112436"
-#   docker compose -f docker-compose.yml -f docker-compose.harbor.yml build
+# The scripts write .env.harbor. Use it for later up/push commands:
+#   docker compose --env-file .env.harbor -f docker-compose.yml -f docker-compose.harbor.yml up -d
 services:
   backend:
     image: ${SHADOWBROKER_IMAGE_REPOSITORY:-harbor.trscd.com.cn/baseapp/bigbodycobain-shadowbroker}:backend-${SHADOWBROKER_IMAGE_TAG:-4a21e92-20260605-112436}

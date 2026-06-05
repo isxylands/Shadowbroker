@@ -43,10 +43,16 @@ if ([string]::IsNullOrWhiteSpace($Tag)) {
 $env:SHADOWBROKER_IMAGE_REPOSITORY = $Repository
 $env:SHADOWBROKER_IMAGE_TAG = $Tag
 
+@"
+SHADOWBROKER_IMAGE_REPOSITORY=$Repository
+SHADOWBROKER_IMAGE_TAG=$Tag
+"@ | Set-Content -Path ".env.harbor" -Encoding ASCII
+
 $backendImage = "${Repository}:backend-${Tag}"
 $frontendImage = "${Repository}:frontend-${Tag}"
 
 Write-Host "SHADOWBROKER_IMAGE_TAG=$Tag"
+Write-Host "Wrote .env.harbor"
 Write-Host "Backend image:  $backendImage"
 Write-Host "Frontend image: $frontendImage"
 
