@@ -1,0 +1,19 @@
+# Local Harbor build override.
+# Usage:
+#   ./scripts/build-harbor-images.sh
+#   powershell -ExecutionPolicy Bypass -File scripts/build-harbor-images.ps1
+#
+# Or override tag manually:
+#   export SHADOWBROKER_IMAGE_TAG="4a21e92-20260605-112436"
+#   docker compose -f docker-compose.yml -f docker-compose.harbor.yml build
+services:
+  backend:
+    image: ${SHADOWBROKER_IMAGE_REPOSITORY:-harbor.trscd.com.cn/baseapp/bigbodycobain-shadowbroker}:backend-${SHADOWBROKER_IMAGE_TAG:-4a21e92-20260605-112436}
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+
+  frontend:
+    image: ${SHADOWBROKER_IMAGE_REPOSITORY:-harbor.trscd.com.cn/baseapp/bigbodycobain-shadowbroker}:frontend-${SHADOWBROKER_IMAGE_TAG:-4a21e92-20260605-112436}
+    build:
+      context: ./frontend
